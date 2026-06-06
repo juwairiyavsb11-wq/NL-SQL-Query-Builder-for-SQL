@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Databases — AskDB{% endblock %}
+
+{% block content %}
+<div class="databases-container">
+  
+  <div class="databases-header-row">
+    <div>
+      <h2>DATABASE MANAGER</h2>
+      <p>Upload new SQLite database files, review query analytics, and manage active datasets.</p>
+    </div>
+  </div>
+
+  <!-- ── ANALYTICS WIDGETS ROW ── -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="folder"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Databases</span>
+        <span class="stat-val">{{ db_stats.total }}</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="terminal"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Queries</span>
+        <span class="stat-val">{{ db_stats.queries }}</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="award"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Most Queried Database</span>
+        <span class="stat-val-text" title="{{ db_stats.most_queried }}">{{ db_stats.most_queried }}</span>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="clock"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Recently Opened Database</span>
+        <span class="stat-val-text" title="{{ db_stats.recently_opened }}">{{ db_stats.recently_opened }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── UPLOAD ZONE & QUICK GUIDE SIDE-BY-SIDE ── -->
+  <div class="upload-guide-row">
+    <!-- UPLOAD ZONE (70% width) -->
+    <div class="upload-wrapper-saas">
+      <div class="upload-zone compact" id="uploadZone">
+        <input type="file" class="upload-input" id="uploadInput" accept=".db,.sqlite,.sqlite3">
+        <div class="upload-icon-saas"><i data-lucide="upload-cloud"></i></div>
+        <h3>Drag & Drop SQLite database file here</h3>
+        <p>or click to browse local files (.db, .sqlite, .sqlite3 up to 50MB)</p>
+        <span class="file-formats-label">Supported formats: SQLite 3 (.db, .sqlite, .sqlite3)</span>
+      </div>
+
+      <div class="upload-progress" id="uploadProgress">
+        <p id="uploadProgressTitle">Uploading database...</p>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        <p class="text-muted" id="uploadStatusText">Processing...</p>
+      </div>
+    </div>
+
+    <!-- QUICK GUIDE (30% width) -->
+    <div class="quick-guide-card">
+      <h3><i data-lucide="help-circle"></i> Quick Guide</h3>
+      <p>AskDB makes it easy to inspect records, aggregate fields, and search structured details without writing a single line of SQL.</p>
+      <div class="guide-tips">
+        <div class="guide-tip-item">
+          <i data-lucide="shield-check" class="success-icon"></i>
+          <span><strong>100% Read-Only:</strong> Destructive commands are strictly blocked. Your databases are safe.</span>
+        </div>
+        <div class="guide-tip-item">
+          <i data-lucide="database" class="primary-icon"></i>
+          <span><strong>Schema Mapping:</strong> Columns, tables, and references are automatically parsed.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MY DATASETS (2-COLUMN GRID OF CARDS) ── -->
+  <div class="databases-section">
+    <h3><i data-lucide="database"></i> My Datasets ({{ databases|length }})</h3>
+    
+    {% if databases %}
+      <div class="databases-grid">
+        {% for db in databases %}
+          <div class="database-card {% if session.get('active_db_id') == db.id %}active-db{% endif %}" data-db-id="{{ db.id }}">
+            <div class="card-top">
+              <div class="db-card-icon"><i data-lucide="database"></i></div>
+              <div class="db-card-meta">
+                <div class="db-name-row">
+                  <span class="db-name" title="{{ db.original_name }}">{{ db.original_name }}</span>
+                  {% if session.get('active_db_id') == db.id %}
+                    <span class="active-badge">Active</span>
+                  {% endif %}
+                </div>
+                <span class="db-date">Uploaded {{ db.uploaded_at.split(' ')[0] }}</span>
+              </div>
+            </div>
+            
+            <div class="db-card-stats-grid">
+              <div class="stat-item">
+                <span class="lbl">Tables</span>
+                <span class="val">{{ db.table_count }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="lbl">Columns</span>
+                <span class="val">{{ db.total_columns }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="lbl">Rows</span>
+                <span class="val">{{ db.total_rows }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="lbl">Size</span>
+                <span class="val" id="dbSize-{{ db.id }}">{{ db.file_size }}</span>
+              </div>
+              <div class="stat-item span-two">
+                <span class="lbl">Last Opened</span>
+                <span class="val last-opened-time" data-time="{{ db.last_opened }}">{{ db.last_opened }}</span>
+              </div>
+            </div>
+
+            <div class="db-card-actions">
+              {% if session.get('active_db_id') == db.id %}
+                <button class="btn-primary-sm action-btn active-indicator-btn" disabled>
+                  <i data-lucide="check"></i>
+                  <span>Active</span>
+                </button>
+              {% else %}
+                <button class="btn-secondary-sm action-btn btn-open-db" data-db-id="{{ db.id }}">
+                  <i data-lucide="folder-open"></i>
+                  <span>Open</span>
+                </button>
+              {% endif %}
+              <a href="{{ url_for('workspace', db_id=db.id) }}" class="btn-primary-sm action-btn">
+                <i data-lucide="terminal"></i>
+                <span>Query</span>
+              </a>
+              <a href="{{ url_for('download_user_db', db_id=db.id) }}" class="btn-secondary-sm action-btn" title="Download SQLite file">
+                <i data-lucide="download"></i>
+                <span>Download</span>
+              </a>
+              <button class="btn-danger-sm action-btn btn-delete-db" data-db-id="{{ db.id }}" title="Delete database">
+                <i data-lucide="trash-2"></i>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="databases-empty">
+        <i data-lucide="database-backup"></i>
+        <h4>No datasets found</h4>
+        <p>Upload a database file above to start running natural language queries.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/database.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Format byte sizes
+    {% for db in databases %}
+      const sizeEl = document.getElementById("dbSize-{{ db.id }}");
+      if (sizeEl) {
+        sizeEl.textContent = UI.formatBytes({{ db.file_size }});
+      }
+    {% endfor %}
+
+    // Format times for last opened
+    document.querySelectorAll('.last-opened-time').forEach(el => {
+      const t = el.dataset.time;
+      if (t && t !== 'Never') {
+        el.textContent = UI.timeAgo(t);
+      }
+    });
+
+    // Initialize Upload logic
+    Database.initUpload();
+
+    // Bind open database actions
+    document.querySelectorAll('.btn-open-db').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const dbId = btn.dataset.dbId;
+        try {
+          const response = await fetch(`/api/database/select/${dbId}`, {
+            method: 'POST'
+          });
+          const data = await response.json();
+          if (data.success) {
+            UI.toast("Database activated successfully", "success");
+            setTimeout(() => location.reload(), 600);
+          } else {
+            UI.toast("Error activating database: " + data.error, "error");
+          }
+        } catch (err) {
+          UI.toast("Network error occurred", "error");
+        }
+      });
+    });
+
+    // Bind delete database actions
+    document.querySelectorAll('.btn-delete-db').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const dbId = btn.dataset.dbId;
+        if (confirm("Are you sure you want to delete this database? This will also delete its query history and saved queries.")) {
+          try {
+            const response = await fetch(`/api/database/delete/${dbId}`, {
+              method: 'POST'
+            });
+            const data = await response.json();
+            if (data.success) {
+              UI.toast("Database deleted successfully", "success");
+              setTimeout(() => location.reload(), 800);
+            } else {
+              UI.toast("Error deleting database: " + data.error, "error");
+            }
+          } catch (err) {
+            UI.toast("Network error occurred", "error");
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

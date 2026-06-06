@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Settings — AskDB{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+  
+  <div class="profile-header-row">
+    <div>
+      <h2>PROFILE & SETTINGS</h2>
+      <p>Manage your account configurations, theme preferences, and security settings.</p>
+    </div>
+  </div>
+
+  <div class="profile-layout-grid">
+    <!-- LEFT SIDE: Sidebar Navigation tabs -->
+    <div class="profile-sidebar-tabs">
+      <button class="profile-tab-btn active" data-profile-tab="overview">
+        <i data-lucide="bar-chart-2"></i>
+        <span>Account Overview</span>
+      </button>
+      <button class="profile-tab-btn" data-profile-tab="profile">
+        <i data-lucide="user"></i>
+        <span>Profile Details</span>
+      </button>
+      <button class="profile-tab-btn" data-profile-tab="preferences">
+        <i data-lucide="sliders"></i>
+        <span>Preferences</span>
+      </button>
+      <button class="profile-tab-btn" data-profile-tab="settings">
+        <i data-lucide="settings"></i>
+        <span>System Security</span>
+      </button>
+    </div>
+
+    <!-- RIGHT SIDE: Tab Contents Card -->
+    <div class="profile-content-card">
+      
+      <!-- ── SECTION 1: OVERVIEW ── -->
+      <div class="profile-tab-content active" id="profile-tab-overview">
+        <h3><i data-lucide="bar-chart-2"></i> Account Overview</h3>
+        <p class="section-desc">Summary of your cloud resources usage on the AskDB SaaS platform.</p>
+        
+        <div class="user-meta-summary">
+          <div class="meta-row">
+            <span class="lbl"><i data-lucide="user"></i> User Account</span>
+            <span class="val">{{ session.get('username') }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="lbl"><i data-lucide="database"></i> Databases Hosted</span>
+            <span class="val">{{ stats.databases }} databases</span>
+          </div>
+          <div class="meta-row">
+            <span class="lbl"><i data-lucide="terminal"></i> Total Queries executed</span>
+            <span class="val">{{ stats.history }} queries</span>
+          </div>
+          <div class="meta-row">
+            <span class="lbl"><i data-lucide="bookmark"></i> Saved Query bookmarks</span>
+            <span class="val">{{ stats.saved_queries }} saved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 2: PROFILE DETAILS ── -->
+      <div class="profile-tab-content" id="profile-tab-profile">
+        <h3><i data-lucide="user"></i> Profile Details</h3>
+        <p class="section-desc">Your basic account description and info.</p>
+        
+        <div class="form-group" style="max-width: 400px; margin-top: 16px;">
+          <label><i data-lucide="user"></i> Username</label>
+          <input type="text" value="{{ session.get('username') }}" disabled style="cursor: not-allowed; background: var(--surface-alt);">
+          <span class="text-sm-muted" style="margin-top: 4px;">Usernames are permanent and cannot be modified.</span>
+        </div>
+      </div>
+
+      <!-- ── SECTION 3: PREFERENCES ── -->
+      <div class="profile-tab-content" id="profile-tab-preferences">
+        <h3><i data-lucide="sliders"></i> Preferences</h3>
+        <p class="section-desc">Customize your workspace theme mode.</p>
+        
+        <div class="theme-selection-block">
+          <h4>Select Theme Interface</h4>
+          <div class="theme-selection-grid">
+            <button class="theme-select-card" id="themeSelectLight">
+              <div class="theme-preview light"></div>
+              <span><i data-lucide="sun"></i> Light Mode</span>
+            </button>
+            <button class="theme-select-card" id="themeSelectDark">
+              <div class="theme-preview dark"></div>
+              <span><i data-lucide="moon"></i> Dark Mode</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SECTION 4: SYSTEM SECURITY ── -->
+      <div class="profile-tab-content" id="profile-tab-settings">
+        <h3><i data-lucide="settings"></i> System Security & Maintenance</h3>
+        <p class="section-desc">Edit credentials or wipe account datasets.</p>
+        
+        <!-- Password edit -->
+        <form class="profile-form" action="{{ url_for('profile_change_password') }}" method="POST" style="margin-top:16px;">
+          <h4>Change Account Password</h4>
+          <div class="form-group">
+            <label for="current_password"><i data-lucide="key-round"></i> Current Password</label>
+            <input type="password" id="current_password" name="current_password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <div class="form-group">
+            <label for="new_password"><i data-lucide="lock"></i> New Password</label>
+            <input type="password" id="new_password" name="new_password" placeholder="minimum 6 characters" required autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label for="confirm_new"><i data-lucide="shield-check"></i> Confirm New Password</label>
+            <input type="password" id="confirm_new" name="confirm_new" placeholder="repeat new password" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn-primary profile-submit-btn">
+            <span>Update Password</span>
+            <i data-lucide="check"></i>
+          </button>
+        </form>
+
+        <hr class="profile-divider">
+
+        <!-- Reset lists / Danger Zone -->
+        <div class="profile-danger-zone">
+          <h4 class="danger-title"><i data-lucide="alert-triangle"></i> Danger Zone</h4>
+          
+          <div class="danger-actions-row">
+            <div class="danger-option-card-saas">
+              <h5>Clear History Logs</h5>
+              <p>Permanently wipe all query history records logged under this username. This cannot be undone.</p>
+              <form action="{{ url_for('profile_reset_history') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear your query history logs?');">
+                <button type="submit" class="btn-danger-sm" style="margin-top: 10px;">Clear logs</button>
+              </form>
+            </div>
+
+            <div class="danger-option-card-saas">
+              <h5>Delete All Databases</h5>
+              <p>Permanently remove all user SQLite database uploads and database query records. Wipes files clean.</p>
+              <form action="{{ url_for('profile_reset_databases') }}" method="POST" onsubmit="return confirm('WARNING: Are you sure you want to delete all uploaded database files from your account? This action is permanent.');">
+                <button type="submit" class="btn-danger-sm" style="margin-top: 10px;">Wipe datasets</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // ── Tab switcher ──
+    const tabs = document.querySelectorAll('.profile-tab-btn');
+    const contents = document.querySelectorAll('.profile-tab-content');
+
+    function switchTab(tabId) {
+      tabs.forEach(t => {
+        if (t.dataset.profileTab === tabId) {
+          t.classList.add('active');
+        } else {
+          t.classList.remove('active');
+        }
+      });
+      contents.forEach(c => {
+        if (c.id === `profile-tab-${tabId}`) {
+          c.classList.add('active');
+        } else {
+          c.classList.remove('active');
+        }
+      });
+      // Update hash in URL quietly
+      history.replaceState(null, null, '#' + tabId);
+    }
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        switchTab(btn.dataset.profileTab);
+      });
+    });
+
+    // Check URL hash on load
+    const hash = window.location.hash.substring(1);
+    if (hash && ['overview', 'profile', 'preferences', 'settings'].includes(hash)) {
+      switchTab(hash);
+    }
+
+    // Dropdown link hash triggers
+    window.addEventListener('hashchange', () => {
+      const newHash = window.location.hash.substring(1);
+      if (newHash && ['overview', 'profile', 'preferences', 'settings'].includes(newHash)) {
+        switchTab(newHash);
+      }
+    });
+
+    // ── Preferences Theme Select ──
+    const themeSelectLight = document.getElementById('themeSelectLight');
+    const themeSelectDark = document.getElementById('themeSelectDark');
+
+    function updatePreferenceCards(theme) {
+      if (theme === 'dark') {
+        themeSelectDark?.classList.add('active');
+        themeSelectLight?.classList.remove('active');
+      } else {
+        themeSelectLight?.classList.add('active');
+        themeSelectDark?.classList.remove('active');
+      }
+    }
+
+    // Initialize cards
+    const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    updatePreferenceCards(initialTheme);
+
+    themeSelectLight?.addEventListener('click', () => {
+      if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        UI.toggleTheme();
+      }
+      updatePreferenceCards('light');
+    });
+
+    themeSelectDark?.addEventListener('click', () => {
+      if (document.documentElement.getAttribute('data-theme') === 'light') {
+        UI.toggleTheme();
+      }
+      updatePreferenceCards('dark');
+    });
+  });
+</script>
+{% endblock %}

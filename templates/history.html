@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Query History — AskDB{% endblock %}
+
+{% block content %}
+<div class="history-container">
+  
+  <div class="history-header-row">
+    <div>
+      <h2>QUERY HISTORY</h2>
+      <p>Analyze previous natural language queries, inspect their generated SQL statements, or re-run queries instantly.</p>
+    </div>
+  </div>
+
+  <div class="history-section">
+    {% if history %}
+      <div class="history-table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Database</th>
+              <th>Natural Language Query</th>
+              <th>Generated SQL</th>
+              <th>Confidence</th>
+              <th>Rows</th>
+              <th>Duration</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in history %}
+              <tr data-history-id="{{ h.id }}">
+                <td class="history-time-col" data-time="{{ h.executed_at }}">{{ h.executed_at }}</td>
+                <td class="history-db-col"><span class="db-badge"><i data-lucide="database"></i> {{ h.database_name }}</span></td>
+                <td class="history-query-col">"{{ h.nl_query }}"</td>
+                <td class="history-sql-col">
+                  <details class="history-sql-details">
+                    <summary>View SQL</summary>
+                    <pre><code>{{ h.generated_sql }}</code></pre>
+                  </details>
+                </td>
+                <td class="history-conf-col">
+                  <span class="conf-badge {% if h.confidence >= 80 %}high{% elif h.confidence >= 50 %}medium{% else %}low{% endif %}">
+                    {{ h.confidence }}%
+                  </span>
+                </td>
+                <td class="history-rows-col">{{ h.row_count }}</td>
+                <td class="history-time-col">{{ h.execution_time }}ms</td>
+                <td class="history-actions-col">
+                  <div class="actions-group">
+                    <a href="{{ url_for('workspace', db_id=h.database_id) }}?q={{ h.nl_query|urlencode }}" class="btn-primary-sm" title="Rerun query in Workspace">
+                      <i data-lucide="play"></i>
+                      <span>Rerun</span>
+                    </a>
+                    <button class="btn-danger-sm btn-delete-history" data-history-id="{{ h.id }}" title="Delete this entry">
+                      <i data-lucide="trash-2"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="history-empty">
+        <i data-lucide="history"></i>
+        <h4>No history logs found</h4>
+        <p>Go to the Query Workspace and execute natural language queries to see them logged here.</p>
+        <a href="{{ url_for('workspace') }}" class="btn-primary">
+          <span>Open Workspace</span>
+          <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Format times into user's locale or relative times
+    document.querySelectorAll('.history-time-col').forEach(el => {
+      const isoStr = el.dataset.time;
+      if (isoStr) {
+        // Simple human-readable parser
+        const d = new Date(isoStr + 'Z');
+        el.textContent = d.toLocaleString();
+      }
+    });
+
+    // Delete history logs
+    document.querySelectorAll('.btn-delete-history').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.historyId;
+        if (confirm("Are you sure you want to delete this query log?")) {
+          try {
+            const response = await fetch(`/api/history/delete/${id}`, {
+              method: 'POST'
+            });
+            const data = await response.json();
+            if (data.success) {
+              UI.toast("Log entry deleted", "success");
+              // Remove row from DOM
+              btn.closest('tr').remove();
+              
+              // If table is now empty, reload to show empty state
+              if (document.querySelectorAll('tbody tr').length === 0) {
+                location.reload();
+              }
+            } else {
+              UI.toast("Error deleting: " + data.error, "error");
+            }
+          } catch (err) {
+            UI.toast("Network error occurred", "error");
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Saved Queries — AskDB{% endblock %}
+
+{% block content %}
+<div class="saved-queries-container">
+  
+  <div class="saved-header-row">
+    <div>
+      <h2>SAVED QUERIES</h2>
+      <p>Manage your query bookmarks. Re-run your favorite database queries with a single click.</p>
+    </div>
+  </div>
+
+  <div class="saved-section">
+    {% if saved_queries %}
+      <div class="saved-grid">
+        {% for s in saved_queries %}
+          <div class="saved-card" data-saved-id="{{ s.id }}">
+            <div class="saved-card-header">
+              <div class="title-meta">
+                <h4>{{ s.name }}</h4>
+                <span class="db-context"><i data-lucide="database"></i> {{ s.database_name }}</span>
+              </div>
+              <button class="btn-delete-saved" data-saved-id="{{ s.id }}" title="Delete bookmark">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>
+            
+            <div class="saved-card-body">
+              <div class="saved-nl-query">
+                <span class="label">Natural Language Question</span>
+                <p>"{{ s.nl_query }}"</p>
+              </div>
+              
+              <details class="saved-sql-details">
+                <summary>Inspect SQL Statement</summary>
+                <pre><code>{{ s.generated_sql }}</code></pre>
+              </details>
+            </div>
+
+            <div class="saved-card-actions">
+              <a href="{{ url_for('workspace', db_id=s.database_id) }}?q={{ s.nl_query|urlencode }}" class="btn-primary-sm run-btn">
+                <i data-lucide="play"></i>
+                <span>Execute Query</span>
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="saved-empty">
+        <i data-lucide="bookmark"></i>
+        <h4>No saved queries found</h4>
+        <p>Bookmarking queries allows you to run reports without rewriting descriptions. Head to the Workspace to bookmark queries.</p>
+        <a href="{{ url_for('workspace') }}" class="btn-primary">
+          <span>Open Workspace</span>
+          <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Delete bookmarks
+    document.querySelectorAll('.btn-delete-saved').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.savedId;
+        if (confirm("Are you sure you want to delete this saved query bookmark?")) {
+          try {
+            const response = await fetch(`/api/saved/delete/${id}`, {
+              method: 'POST'
+            });
+            const data = await response.json();
+            if (data.success) {
+              UI.toast("Saved query deleted", "success");
+              // Remove card from DOM
+              btn.closest('.saved-card').remove();
+              
+              // If grid is now empty, reload to show empty state
+              if (document.querySelectorAll('.saved-card').length === 0) {
+                location.reload();
+              }
+            } else {
+              UI.toast("Error deleting saved query: " + data.error, "error");
+            }
+          } catch (err) {
+            UI.toast("Network error occurred", "error");
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

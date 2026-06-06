@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AskDB — AI-powered Natural Language to SQL Query Builder. Ask your database anything.">
+  <title>AskDB — Ask Your Database Anything</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Archivo+Black&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOP NAVIGATION
+       ═══════════════════════════════════════════════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-left">
+      <!-- Sidebar toggle (tablet/mobile) -->
+      <button class="sidebar-toggle" id="toggleLeftSidebar" title="Toggle Schema Explorer">☰</button>
+
+      <a class="logo" href="/">
+        <span class="logo-icon">DB</span>
+        <span class="logo-text">Ask<span class="logo-dot">DB</span></span>
+      </a>
+
+      <div class="db-status" id="dbStatus">
+        <span class="status-dot"></span>
+        <span id="dbStatusText">No Database</span>
+      </div>
+    </div>
+
+    <div class="navbar-right">
+      <button class="nav-btn" id="btnInsights" title="Database Insights">📊</button>
+      <button class="nav-btn" id="btnTheme" title="Toggle Theme">🌙</button>
+      <button class="nav-btn" id="btnHelp" title="Help">❓</button>
+      <!-- Right sidebar toggle (tablet/mobile) -->
+      <button class="sidebar-toggle" id="toggleRightSidebar" title="Toggle SQL Panel">⚡</button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN APP LAYOUT
+       ═══════════════════════════════════════════════════════ -->
+  <div class="app-layout no-database" id="appLayout">
+
+    <!-- ── LEFT SIDEBAR: Database Explorer ── -->
+    <aside class="sidebar-left" id="sidebarLeft">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Schema Explorer</span>
+      </div>
+
+      <div class="sidebar-search">
+        <input type="text" id="tableSearch" placeholder="Search tables...">
+      </div>
+
+      <div class="sidebar-body" id="sidebarBody">
+        <!-- Database info card -->
+        <div class="db-info-card" id="dbInfoCard" style="display:none;">
+          <h4 id="dbInfoName">Database</h4>
+          <div class="db-info-grid">
+            <div class="db-info-item">
+              <span class="db-info-label">Tables</span>
+              <span class="db-info-value" id="dbInfoTables">0</span>
+            </div>
+            <div class="db-info-item">
+              <span class="db-info-label">Columns</span>
+              <span class="db-info-value" id="dbInfoColumns">0</span>
+            </div>
+            <div class="db-info-item">
+              <span class="db-info-label">Total Rows</span>
+              <span class="db-info-value" id="dbInfoRows">0</span>
+            </div>
+            <div class="db-info-item">
+              <span class="db-info-label">Size</span>
+              <span class="db-info-value" id="dbInfoSize">0 KB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table tree -->
+        <ul class="table-tree" id="tableTree"></ul>
+      </div>
+    </aside>
+
+    <!-- ── CENTER: Main Workspace ── -->
+    <main class="main-workspace" id="mainWorkspace">
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-illustration">
+          <!-- Y2K wireframe sphere SVG -->
+          <svg class="wireframe-sphere" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sphereGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#A7C7E7;stop-opacity:0.3" />
+                <stop offset="50%" style="stop-color:#CFE8FF;stop-opacity:0.1" />
+                <stop offset="100%" style="stop-color:#A7C7E7;stop-opacity:0.3" />
+              </linearGradient>
+            </defs>
+            <!-- Outer circle -->
+            <circle cx="100" cy="100" r="85" fill="none" stroke="#111" stroke-width="3" opacity="0.2"/>
+            <circle cx="100" cy="100" r="85" fill="url(#sphereGrad)"/>
+            <!-- Horizontal ellipses -->
+            <ellipse cx="100" cy="100" rx="85" ry="30" fill="none" stroke="#A7C7E7" stroke-width="2" opacity="0.6"/>
+            <ellipse cx="100" cy="100" rx="85" ry="55" fill="none" stroke="#A7C7E7" stroke-width="1.5" opacity="0.4"/>
+            <!-- Vertical ellipses -->
+            <ellipse cx="100" cy="100" rx="30" ry="85" fill="none" stroke="#A7C7E7" stroke-width="2" opacity="0.6"/>
+            <ellipse cx="100" cy="100" rx="55" ry="85" fill="none" stroke="#A7C7E7" stroke-width="1.5" opacity="0.4"/>
+            <!-- Diagonal ellipses -->
+            <ellipse cx="100" cy="100" rx="85" ry="40" fill="none" stroke="#CFE8FF" stroke-width="1" opacity="0.3" transform="rotate(45, 100, 100)"/>
+            <ellipse cx="100" cy="100" rx="85" ry="40" fill="none" stroke="#CFE8FF" stroke-width="1" opacity="0.3" transform="rotate(-45, 100, 100)"/>
+            <!-- Center dot -->
+            <circle cx="100" cy="100" r="4" fill="#A7C7E7" stroke="#111" stroke-width="2"/>
+            <!-- Small accent circles -->
+            <circle cx="100" cy="15" r="3" fill="#111" opacity="0.3"/>
+            <circle cx="185" cy="100" r="3" fill="#111" opacity="0.3"/>
+            <circle cx="100" cy="185" r="3" fill="#111" opacity="0.3"/>
+            <circle cx="15" cy="100" r="3" fill="#111" opacity="0.3"/>
+            <!-- Decorative floating elements -->
+            <rect x="160" y="25" width="16" height="16" fill="none" stroke="#A7C7E7" stroke-width="2" opacity="0.5" transform="rotate(15, 168, 33)"/>
+            <circle cx="35" cy="40" r="6" fill="#CFE8FF" stroke="#111" stroke-width="1.5" opacity="0.4"/>
+            <polygon points="170,170 180,155 160,155" fill="none" stroke="#A7C7E7" stroke-width="1.5" opacity="0.4"/>
+          </svg>
+        </div>
+
+        <h2>Ask Your Database Anything</h2>
+        <p>Upload a SQLite database to start exploring your data with natural language queries.</p>
+
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" class="upload-input" id="uploadInput" accept=".db,.sqlite,.sqlite3">
+          <span class="upload-icon">🗄️</span>
+          <h3>Drop your database here</h3>
+          <p>or click to browse files</p>
+          <span class="file-types">.db &nbsp; .sqlite &nbsp; .sqlite3</span>
+        </div>
+
+        <div class="upload-progress" id="uploadProgress">
+          <p>Uploading database...</p>
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+          </div>
+          <p class="text-muted" id="uploadStatusText">Processing...</p>
+        </div>
+      </div>
+
+      <!-- Active Workspace (shown after DB upload) -->
+      <div id="activeWorkspace" style="display:none; flex-direction:column; height:100%;">
+
+        <!-- Query Section -->
+        <div class="query-section">
+          <div class="query-input-wrapper">
+            <textarea class="query-textarea"
+                      id="queryInput"
+                      placeholder="Ask your database anything..."
+                      rows="2"></textarea>
+            <div class="query-actions">
+              <button class="query-btn clear" id="btnClear" title="Clear">✕</button>
+              <button class="query-btn send" id="btnSend" title="Send Query">➤</button>
+            </div>
+          </div>
+          <div class="suggestions-section" id="suggestionsSection"></div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-section" id="loadingSection">
+          <div class="loading-stages">
+            <div class="loading-stage" data-stage="schema">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Analyzing database schema</span>
+            </div>
+            <div class="loading-stage" data-stage="intent">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Understanding user intent</span>
+            </div>
+            <div class="loading-stage" data-stage="generate">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Generating SQL query</span>
+            </div>
+            <div class="loading-stage" data-stage="validate">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Validating query safety</span>
+            </div>
+            <div class="loading-stage" data-stage="execute">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Executing query</span>
+            </div>
+            <div class="loading-stage" data-stage="render">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check">✓</span>
+              </div>
+              <span class="stage-text">Rendering results</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-section" id="resultsSection" style="display:none;">
+          <div class="results-header">
+            <div class="results-info">
+              <div class="results-stat">
+                Rows: <span class="stat-value" id="resultRowCount">0</span>
+              </div>
+              <div class="results-stat">
+                Time: <span class="stat-value" id="resultExecTime">0ms</span>
+              </div>
+            </div>
+            <div class="results-controls">
+              <input type="text" class="results-search" id="resultSearch" placeholder="Filter results...">
+              <button class="export-btn" id="btnExportCSV" title="Export CSV">📄 CSV</button>
+              <button class="export-btn" id="btnExportExcel" title="Export Excel">📊 Excel</button>
+            </div>
+          </div>
+
+          <div class="results-table-wrapper" id="resultsTableWrapper">
+            <table class="results-table" id="resultsTable">
+              <thead id="resultsTableHead"></thead>
+              <tbody id="resultsTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="pagination" id="pagination">
+            <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+            <div class="pagination-controls" id="paginationControls"></div>
+          </div>
+        </div>
+
+        <!-- Insights bar -->
+        <div class="insights-bar" id="insightsBar">
+          <div class="insight-item">
+            <span class="insight-icon">📋</span>
+            <div>
+              <div class="insight-label">Tables</div>
+              <div class="insight-value" id="insightTables">0</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <span class="insight-icon">📊</span>
+            <div>
+              <div class="insight-label">Total Rows</div>
+              <div class="insight-value" id="insightRows">0</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <span class="insight-icon">🏆</span>
+            <div>
+              <div class="insight-label">Largest Table</div>
+              <div class="insight-value" id="insightLargest">—</div>
+            </div>
+          </div>
+          <div class="insight-item">
+            <span class="insight-icon">⏱️</span>
+            <div>
+              <div class="insight-label">Last Query</div>
+              <div class="insight-value" id="insightLastTime">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── RIGHT SIDEBAR: SQL Intelligence Panel ── -->
+    <aside class="sidebar-right" id="sidebarRight">
+
+      <!-- SQL Display -->
+      <div class="panel-section" id="panelSQL">
+        <div class="panel-header" data-panel="sql">
+          <span class="panel-title">Generated SQL</span>
+          <span class="panel-toggle">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="sql-display" id="sqlDisplay">
+            <button class="sql-copy-btn" id="btnCopySQL" title="Copy SQL">Copy</button>
+            <code class="sql-code" id="sqlCode">-- Your SQL will appear here</code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation -->
+      <div class="panel-section" id="panelExplanation">
+        <div class="panel-header" data-panel="explanation">
+          <span class="panel-title">Explanation</span>
+          <span class="panel-toggle">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="explanation-text" id="explanationText">
+            Submit a query to see its explanation.
+          </div>
+        </div>
+      </div>
+
+      <!-- Confidence -->
+      <div class="panel-section" id="panelConfidence">
+        <div class="panel-header" data-panel="confidence">
+          <span class="panel-title">Confidence Score</span>
+          <span class="panel-toggle">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="confidence-display" id="confidenceDisplay">
+            <div class="confidence-ring">
+              <svg viewBox="0 0 60 60">
+                <circle class="ring-bg" cx="30" cy="30" r="24"/>
+                <circle class="ring-fill" id="confidenceRing" cx="30" cy="30" r="24"
+                        stroke-dasharray="150.8"
+                        stroke-dashoffset="150.8"/>
+              </svg>
+              <span class="confidence-value" id="confidenceValue">—</span>
+            </div>
+            <div>
+              <div class="confidence-label">Confidence Level</div>
+              <div class="confidence-level" id="confidenceLevel">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Validation -->
+      <div class="panel-section" id="panelValidation">
+        <div class="panel-header" data-panel="validation">
+          <span class="panel-title">Validation</span>
+          <span class="panel-toggle">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="validation-badge safe" id="validationBadge">
+            <span>✓</span> <span id="validationText">Awaiting Query</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query History -->
+      <div class="panel-section" id="panelHistory">
+        <div class="panel-header" data-panel="history">
+          <span class="panel-title">Query History</span>
+          <span class="panel-toggle">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="history-list" id="historyList">
+            <p class="text-muted" style="font-size:12px;">No queries yet.</p>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOAST CONTAINER
+       ═══════════════════════════════════════════════════════ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       HELP MODAL
+       ═══════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Help — AskDB</span>
+        <button class="modal-close" id="closeHelpModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <h3>Getting Started</h3>
+        <p>Upload a SQLite database file (.db, .sqlite, .sqlite3) to begin exploring your data using natural language.</p>
+
+        <h3>Example Queries</h3>
+        <ul>
+          <li><code>Show all customers</code></li>
+          <li><code>Top 10 products by price</code></li>
+          <li><code>How many orders were placed this month?</code></li>
+          <li><code>Average order total by status</code></li>
+          <li><code>Customers from New York who spent more than 100</code></li>
+          <li><code>Count products by category</code></li>
+        </ul>
+
+        <h3>Supported Operations</h3>
+        <p>AskDB supports <strong>read-only</strong> queries: SELECT, GROUP BY, ORDER BY, LIMIT, HAVING, WHERE, and JOINs.</p>
+        <p>For safety, operations like DELETE, DROP, UPDATE, INSERT are blocked.</p>
+
+        <h3>Export</h3>
+        <p>Export your results as <strong>CSV</strong> or <strong>Excel</strong> using the buttons above the results table.</p>
+
+        <h3>Keyboard Shortcuts</h3>
+        <ul>
+          <li><code>Ctrl + Enter</code> — Submit query</li>
+          <li><code>Escape</code> — Close modals</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS
+       ═══════════════════════════════════════════════════════ -->
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/database.js"></script>
+  <script src="/static/js/query.js"></script>
+  <script src="/static/js/results.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+</html>

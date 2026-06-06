@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Overview — AskDB{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  
+  <!-- ── STATS ROW ── -->
+  <div class="stats-row">
+    
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="database"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Databases Uploaded</span>
+        <span class="stat-val">{{ stats.databases }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="terminal"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Queries Executed</span>
+        <span class="stat-val">{{ stats.history }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="bookmark"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Saved Queries</span>
+        <span class="stat-val">{{ stats.saved_queries }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper"><i data-lucide="activity"></i></div>
+      <div class="stat-content">
+        <span class="stat-label">Active Database</span>
+        <span class="stat-val-text">
+          {% if session.get('active_db_name') %}
+            {{ session.get('active_db_name') }}
+          {% else %}
+            None selected
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── GRID LAYOUT ── -->
+  <div class="dashboard-grid">
+    
+    <!-- LEFT: Databases -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3><i data-lucide="database"></i> My Databases</h3>
+        <a href="{{ url_for('databases_page') }}" class="dash-link">Manage Databases</a>
+      </div>
+      <div class="dash-card-body">
+        {% if databases %}
+          <div class="dash-list">
+            {% for db in databases %}
+              <div class="dash-list-item">
+                <div class="item-info">
+                  <span class="item-title">{{ db.original_name }}</span>
+                  <span class="item-sub">
+                    {{ db.table_count }} tables &bull; {{ db.total_rows }} rows &bull; Uploaded {{ db.uploaded_at.split(' ')[0] }}
+                  </span>
+                </div>
+                <a href="{{ url_for('workspace', db_id=db.id) }}" class="btn-primary-sm">
+                  <span>Query</span>
+                  <i data-lucide="arrow-right"></i>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="dash-empty-state">
+            <i data-lucide="database-backup"></i>
+            <p>No databases uploaded yet</p>
+            <a href="{{ url_for('databases_page') }}" class="btn-primary-sm">Upload DB</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT: Recent History -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3><i data-lucide="history"></i> Recent Queries</h3>
+        <a href="{{ url_for('history_page') }}" class="dash-link">View All History</a>
+      </div>
+      <div class="dash-card-body">
+        {% if history %}
+          <div class="dash-list">
+            {% for h in history %}
+              <div class="dash-list-item">
+                <div class="item-info">
+                  <span class="item-title">"{{ h.nl_query }}"</span>
+                  <span class="item-sub">
+                    Database: {{ h.database_name }} &bull; {{ h.row_count }} rows &bull; {{ h.confidence }}% confidence
+                  </span>
+                </div>
+                <a href="{{ url_for('workspace', db_id=h.database_id) }}?q={{ h.nl_query|urlencode }}" class="btn-secondary-sm" title="Rerun in Workspace">
+                  <i data-lucide="play"></i>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="dash-empty-state">
+            <i data-lucide="terminal"></i>
+            <p>No queries executed yet</p>
+            <a href="{{ url_for('workspace') }}" class="btn-primary-sm">Open Workspace</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── BOTTOM ROW ── -->
+  <div class="dashboard-grid bottom">
+    
+    <!-- LEFT BOTTOM: Saved Queries -->
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3><i data-lucide="bookmark"></i> Saved Queries</h3>
+        <a href="{{ url_for('saved_queries_page') }}" class="dash-link">View All Bookmarks</a>
+      </div>
+      <div class="dash-card-body">
+        {% if saved_queries %}
+          <div class="dash-list">
+            {% for s in saved_queries %}
+              <div class="dash-list-item">
+                <div class="item-info">
+                  <span class="item-title">{{ s.name }}</span>
+                  <span class="item-sub">
+                    "{{ s.nl_query }}" &bull; Database: {{ s.database_name }}
+                  </span>
+                </div>
+                <a href="{{ url_for('workspace', db_id=s.database_id) }}?q={{ s.nl_query|urlencode }}" class="btn-primary-sm" title="Run query">
+                  <span>Run</span>
+                  <i data-lucide="arrow-right"></i>
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="dash-empty-state">
+            <i data-lucide="bookmark"></i>
+            <p>No bookmarked queries yet</p>
+            <p class="text-sm-muted">Bookmarks allow you to save queries and execute them again instantly.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT BOTTOM: Quick upload call to action -->
+    <div class="dash-card promo-card">
+      <h3>Need to query your own database?</h3>
+      <p>Upload a new SQLite database file. We support `.db`, `.sqlite`, and `.sqlite3` files up to 50MB. Schema details, keys, and indexes are parsed automatically.</p>
+      <a href="{{ url_for('databases_page') }}" class="btn-primary">
+        <span>Go to Database Manager</span>
+        <i data-lucide="upload-cloud"></i>
+      </a>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

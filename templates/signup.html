@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up — AskDB{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>CREATE ACCOUNT</h2>
+      <p>Start querying databases in seconds with plain English</p>
+    </div>
+    
+    <form class="auth-form" action="{{ url_for('signup') }}" method="POST">
+      <div class="form-group">
+        <label for="username"><i data-lucide="user"></i> Username</label>
+        <input type="text" id="username" name="username" placeholder="choose a username" required autocomplete="username">
+      </div>
+      
+      <div class="form-group">
+        <label for="password"><i data-lucide="lock"></i> Password</label>
+        <input type="password" id="password" name="password" placeholder="must be at least 6 chars" required autocomplete="new-password">
+      </div>
+      
+      <div class="form-group">
+        <label for="confirm_password"><i data-lucide="shield-alert"></i> Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" placeholder="repeat password" required autocomplete="new-password">
+      </div>
+      
+      <button type="submit" class="btn-primary auth-submit-btn">
+        <span>Create Account</span>
+        <i data-lucide="user-plus"></i>
+      </button>
+    </form>
+    
+    <div class="auth-info-badge">
+      <i data-lucide="sparkles"></i>
+      <span>Includes the pre-loaded <strong>E-Commerce Sample Database</strong>!</span>
+    </div>
+    
+    <div class="auth-footer">
+      <p>Already have an account? <a href="{{ url_for('login') }}">Log in here</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

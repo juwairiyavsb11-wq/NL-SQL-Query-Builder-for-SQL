@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Workspace — AskDB{% endblock %}
+
+{% block content %}
+<div class="app-layout" id="appLayout">
+
+  <!-- ── LEFT SIDEBAR: Database Schema Explorer ── -->
+  <aside class="sidebar-left" id="sidebarLeft">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Schema Explorer</span>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" id="tableSearch" placeholder="Search tables...">
+    </div>
+
+    <div class="sidebar-body" id="sidebarBody">
+      <!-- Database info card -->
+      <div class="db-info-card" id="dbInfoCard" style="display:none;">
+        <h4 id="dbInfoName">Database</h4>
+        <div class="db-info-grid">
+          <div class="db-info-item">
+            <span class="db-info-label">Tables</span>
+            <span class="db-info-value" id="dbInfoTables">0</span>
+          </div>
+          <div class="db-info-item">
+            <span class="db-info-label">Columns</span>
+            <span class="db-info-value" id="dbInfoColumns">0</span>
+          </div>
+          <div class="db-info-item">
+            <span class="db-info-label">Total Rows</span>
+            <span class="db-info-value" id="dbInfoRows">0</span>
+          </div>
+          <div class="db-info-item">
+            <span class="db-info-label">Size</span>
+            <span class="db-info-value" id="dbInfoSize">0 KB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table tree -->
+      <ul class="table-tree" id="tableTree"></ul>
+    </div>
+  </aside>
+
+  <!-- ── CENTER: Main Workspace ── -->
+  <main class="main-workspace" id="mainWorkspace">
+    
+    <!-- Workspace header / Active DB selector -->
+    <div class="workspace-header">
+      <div class="workspace-header-left">
+        <button class="sidebar-toggle-btn" id="btnToggleSidebar" title="Toggle Schema Explorer">
+          <i data-lucide="chevron-left"></i>
+        </button>
+        <div class="active-db-indicator">
+          <span class="status-dot-green"></span>
+          <span class="lbl-active">Active Database:</span>
+          <span class="val-active" id="activeDbNameText">
+            {% if session.get('active_db_name') %}
+              {{ session.get('active_db_name') }}
+            {% else %}
+              None loaded
+            {% endif %}
+          </span>
+        </div>
+      </div>
+      
+      <div class="workspace-actions-nav">
+        <a href="{{ url_for('databases_page') }}" class="btn-secondary-sm select-db-btn">
+          <i data-lucide="arrow-left-right"></i>
+          <span>Switch Database</span>
+        </a>
+      </div>
+    </div>
+
+    {% if session.get('active_db_id') %}
+      <!-- Active Workspace -->
+      <div id="activeWorkspace" class="workspace-flow-panel">
+
+        <!-- ── AI COPILOT ONBOARDING GREETING ── -->
+        <div class="assistant-onboarding">
+          <div class="assistant-avatar"><i data-lucide="sparkles"></i></div>
+          <div class="assistant-welcome">
+            <h3>Hello! I am your AskDB Assistant</h3>
+            <p>Ask a question about your database in plain English below. I'll translate it to SQL, check it for safety, and run it for you.</p>
+          </div>
+        </div>
+
+        <!-- Query Section -->
+        <div class="query-section">
+          <div class="query-input-wrapper">
+            <textarea class="query-textarea"
+                      id="queryInput"
+                      placeholder="Ask your database anything in plain English..."
+                      rows="2"></textarea>
+            <div class="query-actions">
+              <button class="query-btn clear" id="btnClear" title="Clear Query"><i data-lucide="trash-2"></i></button>
+              <button class="query-btn send" id="btnSend" title="Run Query">
+                <span>Run</span>
+                <i data-lucide="play"></i>
+              </button>
+            </div>
+          </div>
+          <div class="suggestions-section" id="suggestionsSection"></div>
+        </div>
+
+        <!-- Loading Stages -->
+        <div class="loading-section" id="loadingSection">
+          <div class="loading-stages">
+            <div class="loading-stage" data-stage="schema">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Analyzing database schema</span>
+            </div>
+            <div class="loading-stage" data-stage="intent">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Understanding user intent</span>
+            </div>
+            <div class="loading-stage" data-stage="generate">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Generating SQL query</span>
+            </div>
+            <div class="loading-stage" data-stage="validate">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Validating query safety</span>
+            </div>
+            <div class="loading-stage" data-stage="execute">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Executing query</span>
+            </div>
+            <div class="loading-stage" data-stage="render">
+              <div class="stage-icon">
+                <div class="stage-spinner"></div>
+                <span class="stage-check"><i data-lucide="check"></i></span>
+              </div>
+              <span class="stage-text">Rendering results</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── UNIFIED OUTPUT TABS CONTAINER ── -->
+        <div class="workspace-output-tabs-container">
+          <div class="output-tabs-header">
+            <button class="output-tab-btn active" data-output-tab="output-results" id="resultsTabBtn">
+              <i data-lucide="table"></i> Results
+            </button>
+            <button class="output-tab-btn" data-output-tab="output-sql" id="sqlTabBtn">
+              <i data-lucide="terminal"></i> Generated SQL
+            </button>
+            <button class="output-tab-btn" data-output-tab="output-explanation" id="explanationTabBtn">
+              <i data-lucide="message-square"></i> AI Explanation
+            </button>
+          </div>
+          
+          <div class="output-tabs-body">
+            <!-- RESULTS TAB CONTENT (Default & Active) -->
+            <div class="output-tab-content active" id="output-results">
+              <div class="results-section" id="resultsSection" style="display:none;">
+                <div class="results-header">
+                  <div class="results-info">
+                    <div class="results-stat">
+                      Rows: <span class="stat-value" id="resultRowCount">0</span>
+                    </div>
+                    <div class="results-stat">
+                      Time: <span class="stat-value" id="resultExecTime">0ms</span>
+                    </div>
+                    
+                    <!-- Bookmark save button -->
+                    <button class="btn-secondary-sm save-query-btn" id="btnSaveQuery" title="Save query to Bookmarks">
+                      <i data-lucide="bookmark"></i>
+                      <span>Save Query</span>
+                    </button>
+                  </div>
+                  <div class="results-controls">
+                    <input type="text" class="results-search" id="resultSearch" placeholder="Filter results...">
+                    <button class="export-btn" id="btnExportCSV" title="Export CSV"><i data-lucide="file-text"></i> CSV</button>
+                    <button class="export-btn" id="btnExportExcel" title="Export Excel"><i data-lucide="table"></i> Excel</button>
+                  </div>
+                </div>
+
+                <div class="results-table-wrapper" id="resultsTableWrapper">
+                  <table class="results-table" id="resultsTable">
+                    <thead id="resultsTableHead"></thead>
+                    <tbody id="resultsTableBody"></tbody>
+                  </table>
+                </div>
+
+                <div class="pagination" id="pagination">
+                  <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+                  <div class="pagination-controls" id="paginationControls"></div>
+                </div>
+              </div>
+
+              <!-- Ready / Empty Results State -->
+              <div class="results-ready-state" id="resultsReadyState">
+                <i data-lucide="play-circle"></i>
+                <p>Run a query above to fetch and display database records.</p>
+              </div>
+            </div>
+
+            <!-- SQL TAB CONTENT -->
+            <div class="output-tab-content" id="output-sql">
+              <div class="tech-grid">
+                <!-- SQL Statement -->
+                <div class="tech-card sql-card">
+                  <div class="tech-card-header">
+                    <span>Generated SQL Statement</span>
+                    <button class="sql-copy-btn" id="btnCopySQL"><i data-lucide="copy"></i> Copy</button>
+                  </div>
+                  <div class="sql-display" id="sqlDisplay">
+                    <pre><code class="sql-code" id="sqlCode">-- Your SQL will appear here after running a query</code></pre>
+                  </div>
+                </div>
+
+                <!-- Confidence & Security Status -->
+                <div class="tech-card meta-card">
+                  <div class="tech-card-header">AI Confidence & Security</div>
+                  
+                  <div class="confidence-row">
+                    <div class="confidence-ring-wrapper">
+                      <div class="confidence-ring">
+                        <svg viewBox="0 0 60 60">
+                          <circle class="ring-bg" cx="30" cy="30" r="24"/>
+                          <circle class="ring-fill" id="confidenceRing" cx="30" cy="30" r="24"
+                                  stroke-dasharray="150.8"
+                                  stroke-dashoffset="150.8"/>
+                        </svg>
+                        <span class="confidence-value" id="confidenceValue">—</span>
+                      </div>
+                      <div class="confidence-labels">
+                        <span class="lbl">Confidence</span>
+                        <span class="confidence-level" id="confidenceLevel">—</span>
+                      </div>
+                    </div>
+
+                    <div class="validation-wrapper">
+                      <span class="lbl">Safety Validation</span>
+                      <div class="validation-badge safe" id="validationBadge">
+                        <i data-lucide="shield-check"></i>
+                        <span id="validationText">Awaiting Query</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- EXPLANATION TAB CONTENT -->
+            <div class="output-tab-content" id="output-explanation">
+              <div class="tech-card explanation-card">
+                <div class="tech-card-header">Query Intent Explanation</div>
+                <div class="explanation-wrapper">
+                  <p class="explanation-text" id="explanationText">
+                    Run a query to see a detailed human-readable explanation of what database columns and filters were processed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── BOOKMARK SAVE MODAL ── -->
+        <div class="modal-overlay" id="saveQueryModal">
+          <div class="modal">
+            <div class="modal-header">
+              <span class="modal-title">Save Query Bookmark</span>
+              <button class="modal-close" onclick="UI.closeModal('saveQueryModal')"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="bookmarkName"><i data-lucide="tag"></i> Bookmark Title</label>
+                <input type="text" id="bookmarkName" placeholder="e.g. Sales Category Count" style="width:100%; padding:10px; border:2px solid var(--border); background:var(--bg); outline:none;">
+              </div>
+              <button class="btn-primary" id="btnConfirmSaveQuery" style="margin-top:20px; width:100%; justify-content:center;">
+                <span>Save to Bookmarks</span>
+                <i data-lucide="check"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    {% else %}
+      <!-- Empty Workspace State (No DB selected) -->
+      <div class="workspace-empty-state">
+        <i data-lucide="database-backup"></i>
+        <h3>No database selected</h3>
+        <p>Before running queries, you must upload a database or select an existing one.</p>
+        <a href="{{ url_for('databases_page') }}" class="btn-primary">
+          <span>Go to Database Manager</span>
+          <i data-lucide="arrow-right"></i>
+        </a>
+      </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/database.js"></script>
+<script src="/static/js/query.js"></script>
+<script src="/static/js/results.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Sidebar collapse toggle
+    const btnToggle = document.getElementById('btnToggleSidebar');
+    const sidebar = document.getElementById('sidebarLeft');
+    const appLayout = document.getElementById('appLayout');
+    if (btnToggle && sidebar) {
+      btnToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        if (appLayout) {
+          appLayout.classList.toggle('sidebar-collapsed');
+        }
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        btnToggle.innerHTML = isCollapsed ? '<i data-lucide="chevron-right"></i>' : '<i data-lucide="chevron-left"></i>';
+        lucide.createIcons();
+      });
+    }
+
+    {% if session.get('active_db_id') %}
+      // Initialize modules
+      Database.initSearch();
+      Query.init();
+      Results.init();
+
+      // Load active schema info and suggest Prompts
+      await Database.onDatabaseLoaded();
+
+      // Check for 'q' parameter in URL and run automatically if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryParam = urlParams.get('q');
+      if (queryParam) {
+        const input = document.getElementById('queryInput');
+        if (input) {
+          input.value = decodeURIComponent(queryParam);
+          input.style.height = 'auto';
+          input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+          setTimeout(() => Query.submit(), 500);
+        }
+      }
+
+      // Unified workspace output tabs switcher
+      document.querySelectorAll('.output-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tabId = btn.dataset.outputTab;
+          
+          document.querySelectorAll('.output-tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.output-tab-content').forEach(c => c.classList.remove('active'));
+          
+          btn.classList.add('active');
+          const targetContent = document.getElementById(tabId);
+          if (targetContent) {
+            targetContent.classList.add('active');
+          }
+        });
+      });
+    {% endif %}
+  });
+</script>
+{% endblock %}

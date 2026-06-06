@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AskDB — AI-powered Natural Language to SQL Query Builder. Ask your database anything.">
+  <title>{% block title %}AskDB — Ask Your Database Anything{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Archivo+Black&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOP NAVIGATION
+       ═══════════════════════════════════════════════════════ -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-left">
+      <a class="logo" href="/">
+        <span class="logo-icon">DB</span>
+        <span class="logo-text">Ask<span class="logo-dot">DB</span></span>
+      </a>
+      
+      {% if session.get('user_id') %}
+      <div class="nav-links">
+        <a class="nav-link {% if request.path == '/overview' %}active{% endif %}" href="{{ url_for('overview') }}">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Overview</span>
+        </a>
+        <a class="nav-link {% if request.path == '/databases' %}active{% endif %}" href="{{ url_for('databases_page') }}">
+          <i data-lucide="database"></i>
+          <span>Databases</span>
+        </a>
+        <a class="nav-link {% if request.path.startswith('/workspace') %}active{% endif %}" href="{{ url_for('workspace') }}">
+          <i data-lucide="terminal"></i>
+          <span>Workspace</span>
+        </a>
+        <a class="nav-link {% if request.path == '/history' %}active{% endif %}" href="{{ url_for('history_page') }}">
+          <i data-lucide="history"></i>
+          <span>History</span>
+        </a>
+        <a class="nav-link {% if request.path == '/saved-queries' %}active{% endif %}" href="{{ url_for('saved_queries_page') }}">
+          <i data-lucide="bookmark"></i>
+          <span>Saved Queries</span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="navbar-right">
+      {% if session.get('user_id') %}
+        <button class="nav-btn" id="btnHelp" title="Help Center"><i data-lucide="help-circle"></i></button>
+        <button class="nav-btn theme-toggle-btn" title="Toggle Theme"><i data-lucide="moon" class="theme-icon"></i></button>
+        
+        <!-- Profile Dropdown Container -->
+        <div class="profile-dropdown-container">
+          <button class="user-badge" id="profileDropdownBtn">
+            <i data-lucide="user"></i>
+            <span>{{ session.get('username') }}</span>
+            <i data-lucide="chevron-down" style="width:12px; height:12px; margin-left:4px;"></i>
+          </button>
+          
+          <div class="profile-dropdown-menu" id="profileDropdownMenu">
+            <div class="dropdown-header">Logged in as <strong>{{ session.get('username') }}</strong></div>
+            <hr class="dropdown-divider">
+            <a href="{{ url_for('profile_page') }}#overview" class="dropdown-item"><i data-lucide="bar-chart-2"></i> Account Overview</a>
+            <a href="{{ url_for('profile_page') }}#profile" class="dropdown-item"><i data-lucide="user"></i> Profile Settings</a>
+            <a href="{{ url_for('profile_page') }}#preferences" class="dropdown-item"><i data-lucide="sliders"></i> Preferences</a>
+            <button class="dropdown-item theme-toggle-btn"><i data-lucide="moon" class="theme-icon-dropdown"></i> Toggle Theme</button>
+            <a href="{{ url_for('profile_page') }}#settings" class="dropdown-item"><i data-lucide="settings"></i> System Security</a>
+            <hr class="dropdown-divider">
+            <a href="{{ url_for('logout') }}" class="dropdown-item logout"><i data-lucide="log-out"></i> Log Out</a>
+          </div>
+        </div>
+      {% else %}
+        <button class="nav-btn theme-toggle-btn" title="Toggle Theme"><i data-lucide="moon" class="theme-icon"></i></button>
+        <a class="nav-btn-auth login-btn" href="{{ url_for('login') }}">Log In</a>
+        <a class="nav-btn-auth signup-btn" href="{{ url_for('signup') }}">Sign Up</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN CONTENT BLOCK
+       ═══════════════════════════════════════════════════════ -->
+  {% block content %}{% endblock %}
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOAST CONTAINER
+       ═══════════════════════════════════════════════════════ -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       HELP DRAWER & OVERLAY
+       ═══════════════════════════════════════════════════════ -->
+  {% if session.get('user_id') %}
+  <div class="drawer-overlay" id="helpDrawerOverlay"></div>
+  <div class="help-drawer" id="helpDrawer">
+    <div class="drawer-header">
+      <span class="drawer-title"><i data-lucide="help-circle"></i> Help Center</span>
+      <button class="drawer-close" id="closeHelpDrawer"><i data-lucide="x"></i></button>
+    </div>
+    
+    <div class="drawer-tabs">
+      <button class="drawer-tab-btn active" data-help-tab="help-getting-started">Getting Started</button>
+      <button class="drawer-tab-btn" data-help-tab="help-examples">Examples</button>
+      <button class="drawer-tab-btn" data-help-tab="help-faq">FAQ</button>
+      <button class="drawer-tab-btn" data-help-tab="help-files">File Types</button>
+      <button class="drawer-tab-btn" data-help-tab="help-export">Export Guide</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Getting Started -->
+      <div class="drawer-tab-content active" id="help-getting-started">
+        <h4>Getting Started Guide</h4>
+        <p>Welcome to AskDB! Here is how to query your data in 4 quick steps:</p>
+        <ol>
+          <li>Navigate to the <strong>Databases</strong> manager tab.</li>
+          <li>Upload your custom database or use the pre-loaded <strong>E-Commerce Sample Database</strong>.</li>
+          <li>Head over to the <strong>Query Workspace</strong>.</li>
+          <li>Type a query in plain English and click <strong>Run</strong> (or press <code>Ctrl+Enter</code>).</li>
+        </ol>
+        <div class="drawer-tip">
+          <i data-lucide="lightbulb"></i>
+          <span><strong>Tip:</strong> Suggested quick prompts adapt to your active schema dynamically. Click them to auto-populate!</span>
+        </div>
+      </div>
+
+      <!-- Examples -->
+      <div class="drawer-tab-content" id="help-examples">
+        <h4>Example Queries</h4>
+        <p>AskDB supports complex structural mapping. Try these question patterns:</p>
+        <div class="example-item">
+          <strong>Simple Lists:</strong>
+          <code>Show all customers</code>
+        </div>
+        <div class="example-item">
+          <strong>Filter Conditions:</strong>
+          <code>Show customers from New York</code>
+        </div>
+        <div class="example-item">
+          <strong>Sorting/Limits:</strong>
+          <code>Top 5 products by price</code>
+        </div>
+        <div class="example-item">
+          <strong>Joins:</strong>
+          <code>Show customers who ordered more than 3 times</code>
+        </div>
+        <div class="example-item">
+          <strong>Groupings:</strong>
+          <code>Count products by category</code>
+        </div>
+        <div class="example-item">
+          <strong>Aggregations:</strong>
+          <code>Average product price by category</code>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="drawer-tab-content" id="help-faq">
+        <h4>Frequently Asked Questions</h4>
+        
+        <h5>Is my database file secure?</h5>
+        <p>Yes. AskDB runs queries in read-only mode, and user databases are isolated strictly within your account directory folder.</p>
+        
+        <h5>Does it support write commands?</h5>
+        <p>No. For safety, write/modify operations like <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, and <code>DROP</code> are blocked.</p>
+        
+        <h5>How does the AI translation work?</h5>
+        <p>The copilot matches structural column keywords and query patterns against database schemas to build valid SQLite code dynamically.</p>
+      </div>
+
+      <!-- File Types -->
+      <div class="drawer-tab-content" id="help-files">
+        <h4>Supported File Types</h4>
+        <p>AskDB is optimized for SQLite databases. The following file formats are supported:</p>
+        <ul>
+          <li><code>.db</code> (SQLite 3 Database)</li>
+          <li><code>.sqlite</code></li>
+          <li><code>.sqlite3</code></li>
+        </ul>
+        <p>Maximum upload size limit: <strong>50 MB</strong>.</p>
+      </div>
+
+      <!-- Export Guide -->
+      <div class="drawer-tab-content" id="help-export">
+        <h4>Export Guide</h4>
+        <p>Export workspace tables in two formats:</p>
+        <ul>
+          <li><strong>CSV Export:</strong> Generates client-side structured text data for use in scripting or spreadsheet imports.</li>
+          <li><strong>Excel Export:</strong> Server-side sheet generation containing header columns and clean rows.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS AND INITIALIZATION
+       ═══════════════════════════════════════════════════════ -->
+  <!-- Developer Testability Hook (stubs native dialogs for automation testing) -->
+  <script>
+    if (new URLSearchParams(window.location.search).get('test') === 'true' || sessionStorage.getItem('testMode') === 'true') {
+      sessionStorage.setItem('testMode', 'true');
+      window.confirm = function() { return true; };
+      window.prompt = function() { return "Category Count"; };
+      console.log("🛠️ Test stub mode active: native confirm/prompt dialogs auto-approve.");
+    }
+  </script>
+
+  <!-- Lucide Icons Library -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/js/ui.js"></script>
+  <script src="/static/js/app.js"></script>
+  
+  {% block scripts %}{% endblock %}
+
+  <!-- Flask Flash Messages Toast Integration -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          {% for category, message in messages %}
+            UI.toast("{{ message }}", "{{ category if category in ['success', 'error', 'info'] else 'info' }}");
+          {% endfor %}
+        });
+      </script>
+    {% endif %}
+  {% endwith %}
+  
+  <script>
+    // Initialize Lucide Icons on load
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+
+</body>
+</html>

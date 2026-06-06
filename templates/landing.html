@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}AskDB — AI-Powered Natural Language Database Assistant{% endblock %}
+
+{% block content %}
+<div class="landing-container">
+  
+  <!-- ── HERO SECTION ── -->
+  <header class="hero-section">
+    <div class="hero-card">
+      <div class="hero-badge">NEW: GEN-2 SQL ENGINE</div>
+      <h1 class="hero-title">ASK YOUR DATABASE ANYTHING</h1>
+      <p class="hero-subtitle">
+        Query SQLite databases using plain English. No SQL knowledge required. Get instant insights, download results, and save queries inside a premium workspace.
+      </p>
+      <div class="hero-actions">
+        <a href="{{ url_for('signup') }}" class="btn-primary hero-btn">
+          <span>Get Started For Free</span>
+          <i data-lucide="arrow-right"></i>
+        </a>
+        <a href="{{ url_for('login') }}" class="btn-secondary hero-btn">
+          <span>Sign In to Workspace</span>
+          <i data-lucide="log-in"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── APP FLOW CHART ── -->
+  <section class="flow-section">
+    <h2 class="section-title">HOW IT WORKS</h2>
+    <div class="flow-grid">
+      
+      <div class="flow-card">
+        <div class="flow-num">01</div>
+        <div class="flow-icon-wrapper"><i data-lucide="user-plus"></i></div>
+        <h3>Create Account</h3>
+        <p>Sign up in seconds. We pre-load your workspace with a rich demo e-commerce dataset.</p>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-num">02</div>
+        <div class="flow-icon-wrapper"><i data-lucide="upload-cloud"></i></div>
+        <h3>Upload SQLite DB</h3>
+        <p>Drop in any SQLite database. AskDB reads columns, keys, and row counts instantly.</p>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-num">03</div>
+        <div class="flow-icon-wrapper"><i data-lucide="message-square-code"></i></div>
+        <h3>Ask in Plain English</h3>
+        <p>Type queries like "Top 10 customers by orders" or "Average sales per city".</p>
+      </div>
+
+      <div class="flow-card">
+        <div class="flow-num">04</div>
+        <div class="flow-icon-wrapper"><i data-lucide="table"></i></div>
+        <h3>Analyze & Export</h3>
+        <p>Examine results in an interactive grid, inspect generated SQL, and export to CSV or Excel.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <!-- ── FEATURE OVERVIEW ── -->
+  <section class="features-section">
+    <div class="features-header">
+      <h2 class="section-title">BUILT FOR EVERYONE</h2>
+      <p class="section-subtitle">A professional SQL workspace designed for non-technical managers, business teams, and analysts.</p>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card">
+        <i data-lucide="shield-check" class="feature-icon"></i>
+        <h3>Read-Only Queries</h3>
+        <p>Completely safe execution. Destructive SQL commands like DELETE, INSERT, and DROP are strictly blocked by our validation engine.</p>
+      </div>
+      <div class="feature-card">
+        <i data-lucide="sparkles" class="feature-icon"></i>
+        <h3>AI Confidence Score</h3>
+        <p>Know exactly how reliable the query is. Get an immediate confidence reading alongside a detailed human-readable explanation.</p>
+      </div>
+      <div class="feature-card">
+        <i data-lucide="bookmark-check" class="feature-icon"></i>
+        <h3>Query History & Bookmarks</h3>
+        <p>Your history is saved automatically. Bookmark your favorite queries and re-run them with one click on any database.</p>
+      </div>
+      <div class="feature-card">
+        <i data-lucide="download" class="feature-icon"></i>
+        <h3>Instant Exporting</h3>
+        <p>Download clean tables directly. Supports exporting fully formatted CSV reports or professional Excel spreadsheets.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="landing-footer">
+    <p>&copy; 2026 AskDB. Premium Business Analytics Workspace. All rights reserved.</p>
+  </footer>
+
+</div>
+{% endblock %}
