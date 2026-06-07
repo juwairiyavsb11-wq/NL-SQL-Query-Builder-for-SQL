@@ -128,6 +128,11 @@ def _find_best_table(token, schema):
         # Exact or plural match
         if token == tname or token + "s" == tname or token == tname + "s" or token + "es" == tname:
             return table["name"]
+        
+        # Skip similarity checks for short tokens
+        if len(token) < 2:
+            continue
+
         score = _similarity(token, tname)
         if score > best_score:
             best_score = score
@@ -145,6 +150,11 @@ def _find_best_column(token, table_obj):
         clean_token = token.replace("_", "")
         if clean_token == clean_cname or token == cname:
             return col["name"]
+
+        # Skip similarity checks for short tokens
+        if len(clean_token) < 2:
+            continue
+
         score = _similarity(clean_token, clean_cname)
         if score > best_score:
             best_score = score
@@ -429,6 +439,38 @@ def generate_query(nl_query, schema):
                 if comp_col:
                     where_clauses.append(f'"{comp_col}" {op} {val}')
                     confidence += 8
+            break
+
+    # Wildcard / LIKE patterns (e.g. starts with, ends with, contains)
+    LIKE_PATTERNS = [
+        (r"(?:starts with|starting with|start with)\s+(?:letter\s+)?['\"]?([a-zA-Z0-9_\-\s]+)['\"]?", "LIKE", "{val}%"),
+        (r"(?:ends with|ending with|end with)\s+(?:letter\s+)?['\"]?([a-zA-Z0-9_\-\s]+)['\"]?", "LIKE", "%{val}"),
+        (r"(?:contains|containing)\s+['\"]?([a-zA-Z0-9_\-\s]+)['\"]?", "LIKE", "%{val}%"),
+    ]
+
+    for pattern, op, format_str in LIKE_PATTERNS:
+        m = re.search(pattern, query)
+        if m:
+            val = m.group(1).strip()
+            # Find the column before the wildcard phrase
+            before = query[:m.start()]
+            before_tokens = _tokenize(before)
+            comp_col = None
+            for bt in reversed(before_tokens):
+                if bt in STOP_WORDS:
+                    continue
+                col = _find_best_column(bt, primary_table_obj)
+                if col:
+                    comp_col = col
+                    break
+            
+            if not comp_col:
+                comp_col = _find_name_column(primary_table_obj)
+                
+            if comp_col:
+                sql_val = format_str.format(val=val)
+                where_clauses.append(f'"{comp_col}" LIKE \'{sql_val}\'')
+                confidence += 10
             break
 
     # Time-based conditions
